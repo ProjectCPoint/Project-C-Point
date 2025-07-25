@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Pornhub Cum Countdown
 // @namespace    http://tampermonkey.net/
-// @version      0.4
+// @version      0.5
 // @description  Countdown Overlay
 // @author       ProjectCPoint
 // @match        https://www.pornhub.org/*
@@ -11,14 +11,19 @@
 (function() {
     'use strict';
 
-    const Sound = false; // Sound abspielen
-    const Numbers = true; // Zahlen anzeigen
+    const Sound = true; // Play Sounds
+    const Numbers = true; // Show Numbers
 
-    const soundBaseURL = 'https://your.github.repo/sounds/'; // Ersetze durch GitHub-Pfad
-    //Erwartet countdown_10.mp3, countdown_9.mp3, …, countdown_1.mp3, C.mp3
+    const speakersList = "Livia,Sage";
+    const speakers = speakersList.split(',').map(s => s.trim());
+    const selectedSpeaker = speakers[Math.floor(Math.random() * speakers.length)];
+
+    //console.log(`[C-Pointer] Choosen Speaker: ${selectedSpeaker}`);
+
+    const soundBaseURL = 'https://github.com/ProjectCPoint/Project-C-Point/raw/refs/heads/main/Sounds/';
 
     let cPointers = [];
-    let triggered = {}; // pro Marker-Zeit pro Countdownwert
+    let triggered = {};
 
     function parseTimeToSeconds(timeStr) {
         const parts = timeStr.split(':').map(Number);
@@ -39,7 +44,7 @@
                 const timesRaw = match[1].split(';').map(t => t.trim()).filter(t => t.length > 0);
                 timesRaw.forEach(timeStr => {
                     const seconds = parseTimeToSeconds(timeStr);
-                    console.log(`[C-Pointer] Marker gefunden: ${timeStr} = ${seconds}s`);
+                    //console.log(`[C-Pointer] Found Markers: ${timeStr} = ${seconds}s`);
                     cPointers.push(seconds);
                     triggered[seconds] = {};
                 });
@@ -47,12 +52,11 @@
         });
 
         if (cPointers.length === 0) {
-            console.log('[C-Pointer] Keine Marker gefunden.');
+            //console.log('[C-Pointer] No Markers found.');
         } else {
-            console.log(`[C-Pointer] Gesamtanzahl Marker geladen: ${cPointers.length}`);
+            //console.log(`[C-Pointer] Loaded Markers: ${cPointers.length}`);
         }
     }
-
 
     function showOverlay(text) {
         let overlay = document.getElementById('cPointerOverlay');
@@ -79,21 +83,21 @@
 
     function playSound(name) {
         if (!Sound) return;
-        const audio = new Audio(`${soundBaseURL}${name}.mp3`);
+        const audio = new Audio(`${soundBaseURL}${selectedSpeaker}/${name}.mp3`);
         audio.play();
-        console.log(`[Sound] Abgespielt: ${name}.mp3`);
+        //console.log(`[Sound] Played: ${selectedSpeaker}/${name}.mp3`);
     }
 
     function monitorVideo() {
         const videoTimer = document.querySelector('.mgp_elapsed');
         if (!videoTimer) {
-            console.log('[C-Pointer] Videotimer nicht gefunden.');
+            //console.log('[C-Pointer] No Videotimer found.');
             return;
         }
 
         setInterval(() => {
             const currentTime = parseTimeToSeconds(videoTimer.textContent.trim());
-            console.log(`[C-Pointer] Aktuelle Zeit: ${currentTime}s`);
+            //console.log(`[C-Pointer] Time now: ${currentTime}s`);
 
             cPointers.forEach(pointer => {
                 const diff = pointer - currentTime;
@@ -111,11 +115,10 @@
                             const soundName = countdownVal === 0 ? 'C' : `countdown_${countdownVal}`;
                             playSound(soundName);
                         }
-                        console.log(`[C-Pointer] Countdown: ${countdownVal === 0 ? 'C' : countdownVal} für Marker ${pointer}s`);
+                        //console.log(`[C-Pointer] Countdown: ${countdownVal === 0 ? 'C' : countdownVal} for Marker ${pointer}s`);
                     }
                 }
 
-                // Rückspul-Erkennung: Wenn der Videostand weit genug unter den Marker fällt, resette alle Trigger
                 if (currentTime < pointer - 11) {
                     triggered[pointer] = {};
                 }
@@ -127,7 +130,7 @@
     reloadCPointers();
     monitorVideo();
 
-    // Für manuelles Nachladen über Konsole
+    // Manual Redetect Markers
     window.reloadCPointers = reloadCPointers;
 
 })();
